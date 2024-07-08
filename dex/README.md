@@ -2,18 +2,16 @@
 
 ## Deploying the DEX
 
-Using the `do.sh` script from the repository's top level directory,
-
 ### Run unit tests
 
 ```bash
-./do.sh test dex
+cargo test
 ```
 
-### Compile the dex binary
+### Build Solana binary
 
 ```bash
-./do.sh build dex
+cargo build-bpf
 ```
 
 ### Deploy the dex to the configured solana cluster
