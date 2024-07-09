@@ -12,7 +12,7 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 #[cfg(test)]
 use proptest_derive::Arbitrary;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "program")]
+
 use solana_program::{clock::Clock, msg, sysvar::Sysvar};
 
 #[cfg(not(feature = "program"))]
