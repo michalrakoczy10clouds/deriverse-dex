@@ -4,25 +4,24 @@
   <h1>deriverse-dex</h1>
 
   <p>
-    <strong>Project Serum Rust Monorepo</strong>
+    <strong>Deriverse exchange repository</strong>
   </p>
 
   <p>
-    <a href="https://travis-ci.com/project-serum/serum-dex"><img alt="Build Status" src="https://travis-ci.com/project-serum/serum-dex.svg?branch=master" /></a>
-    <a href="https://discord.com/channels/739225212658122886"><img alt="Discord Chat" src="https://img.shields.io/discord/739225212658122886?color=blueviolet" /></a>
+    <!-- <a href="https://travis-ci.com/project-serum/serum-dex"><img alt="Build Status" src="https://travis-ci.com/project-serum/serum-dex.svg?branch=master" /></a>
+    <a href="https://discord.com/channels/739225212658122886"><img alt="Discord Chat" src="https://img.shields.io/discord/739225212658122886?color=blueviolet" /></a> -->
     <a href="https://opensource.org/licenses/Apache-2.0"><img alt="License" src="https://img.shields.io/github/license/project-serum/serum-dex?color=blue" /></a>
   </p>
 
   <h4>
-    <a href="https://projectserum.com/">Website</a>
-    <span> | </span>
-    <a href="https://serum-academy.com/en/">Academy</a>
+    <a href="https://www.deriverse.io/">Website</a>
+    <!-- <a href="https://serum-academy.com/en/">Academy</a>
     <span> | </span>
     <a href="https://github.com/project-serum/awesome-serum">Awesome</a>
     <span> | </span>
     <a href="https://dex.projectserum.com/#/">DEX</a>
     <span> | </span>
-    <a href="https://github.com/project-serum/serum-ts">TypeScript</a>
+    <a href="https://github.com/project-serum/serum-ts">TypeScript</a> -->
   </h4>
 </div>
 
@@ -34,7 +33,7 @@
 
 ## Note
 
-- **Serum is in active development so all APIs and protocols are subject to change.**
+- **Deriverse is in active development so all APIs and protocols are subject to change.**
 - **The code is unaudited. Use at your own risk.**
 
 ## Contributing
