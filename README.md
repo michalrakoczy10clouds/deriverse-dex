@@ -1,5 +1,5 @@
 <div align="center">
-  <img height="170" src="http://github.com/project-serum/awesome-serum/blob/master/logo-serum.png?raw=true" />
+  <img height="170" src="https://media.licdn.com/dms/image/D4E0BAQFwFS9URREfRw/company-logo_200_200/0/1708607365720/deriverse_logo?e=2147483647&v=beta&t=V9EpG1stUSRdH6bj6TdBSNQX7j8IDm9mZvvrhaa311c" />
 
   <h1>deriverse-dex</h1>
 
