@@ -1,5 +1,7 @@
 RED=\033[0;31m
-NC=\033[0m # No Color
+NC=\033[0m
+
+PROGRAM_ID=7fFC9AAkGL24rH576f47GiKBK72YPFaXhu1SstyhHkgB
 
 build:
 	cargo build-sbf
@@ -12,10 +14,16 @@ integration-test:
 	$(eval dexId = $(shell solana program deploy -u l --output json-compact ./target/sbf-solana-solana/release/serum_dex.so | jq .programId -r))
 	cd crank && cargo run -- localnet whole-shebang ~/.config/solana/id.json $(dexId)
 
+# Builds dex program and deploy it to local node
+# requires solana-validator-node running in separate terminal
+# Returns deployed program ID
 local: build
 	@echo
 	@echo "${RED}Requires solana-validator-node running!!!!${NC}"
 	@echo
-	solana program deploy -u l --output json-compact ./target/sbf-solana-solana/release/serum_dex.so | jq .programId -r
+	solana program deploy --url localhost --output json-compact ./target/sbf-solana-solana/release/serum_dex.so | jq .programId -r
+
+devnet:
+	solana program deploy --url devnet --output json-compact ./target/sbf-solana-solana/release/serum_dex.so | jq .programId -r
 
 devnet: build
