@@ -21,9 +21,7 @@ local: build
 	@echo
 	@echo "${RED}Requires solana-validator-node running!!!!${NC}"
 	@echo
-	solana program deploy --url localhost --output json-compact ./target/sbf-solana-solana/release/serum_dex.so | jq .programId -r
-
-devnet:
-	solana program deploy --url devnet --output json-compact ./target/sbf-solana-solana/release/serum_dex.so | jq .programId -r
+	solana program deploy --url localhost -v --output json-compact ./target/sbf-solana-solana/release/serum_dex.so | jq .programId -r
 
 devnet: build
+	solana program deploy --url devnet -v --output json-compact ./target/sbf-solana-solana/release/serum_dex.so | jq .programId -r

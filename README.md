@@ -27,9 +27,9 @@
 
 ## Program Deployments
 
-| Program     | Devnet | Mainnet Beta |
-| ----------- | ------ | ------------ |
-| [DEX](/dex) | `TBA`  | `TBA`        |
+| Program     | Devnet                                                                                                                                            | Mainnet Beta |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| [DEX](/dex) | [`74AmnpEk4t7akWSfuQ7hJMwAKXsWL3TcHnU2oZxQryXn`](https://explorer.solana.com/address/74AmnpEk4t7akWSfuQ7hJMwAKXsWL3TcHnU2oZxQryXn?cluster=devnet) | `TBA`        |
 
 ## Note
 
