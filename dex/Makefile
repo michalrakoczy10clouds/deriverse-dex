@@ -10,14 +10,15 @@ build:
 unit-test:
 	cargo test
 
-# todo crank need to be fixed, will be done later
+# Runs integration tests using crank.
+# Requires solana-validator-node running in separate terminal
 integration-test:
 	$(eval dexId = $(shell solana program deploy -u l --output json-compact ./target/sbf-solana-solana/release/serum_dex.so | jq .programId -r))
 	cd crank && cargo run -- localnet whole-shebang ~/.config/solana/id.json $(dexId)
 	cd ..
 
 # Builds dex program and deploy it to local node
-# requires solana-validator-node running in separate terminal
+# Requires solana-validator-node running in separate terminal
 # Returns deployed program ID
 local: build
 	@echo

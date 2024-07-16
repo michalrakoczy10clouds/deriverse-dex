@@ -1112,6 +1112,7 @@ dependencies = [
  "slog-stdlog",
  "sloggers",
  "solana-client",
+ "solana-sdk",
  "spl-token 6.0.0",
  "threadpool",
  "tokio 0.2.23",

@@ -4,7 +4,7 @@
 use std::borrow::Cow;
 use std::cmp::{max, min};
 use std::collections::BTreeSet;
-use std::convert::identity;
+use std::convert::{identity, TryFrom};
 use std::mem::size_of;
 use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
@@ -14,7 +14,6 @@ use anyhow::{format_err, Result};
 
 use clap::Parser;
 use debug_print::debug_println;
-use enumflags2::BitFlags;
 use log::{error, info};
 use rand::rngs::OsRng;
 use safe_transmute::{
@@ -424,6 +423,8 @@ fn get_keys_for_market<'a>(
     program_id: &'a Pubkey,
     market: &'a Pubkey,
 ) -> Result<MarketPubkeys> {
+    use std::convert::TryFrom;
+
     let account_data: Vec<u8> = client.get_account_data(&market)?;
     let words: Cow<[u64]> = remove_dex_account_padding(&account_data)?;
     let market_state: MarketState = {
@@ -448,24 +449,24 @@ fn get_keys_for_market<'a>(
     );
     Ok(MarketPubkeys {
         market: Box::new(*market),
-        req_q: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
+        req_q: Box::new(Pubkey::try_from(transmute_one_to_bytes(&identity(
             market_state.req_q,
-        )))),
-        event_q: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
+        ))).unwrap()),
+        event_q: Box::new(Pubkey::try_from(transmute_one_to_bytes(&identity(
             market_state.event_q,
-        )))),
-        bids: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
+        ))).unwrap()),
+        bids: Box::new(Pubkey::try_from(transmute_one_to_bytes(&identity(
             market_state.bids,
-        )))),
-        asks: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
+        ))).unwrap()),
+        asks: Box::new(Pubkey::try_from(transmute_one_to_bytes(&identity(
             market_state.asks,
-        )))),
-        coin_vault: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
+        ))).unwrap()),
+        coin_vault: Box::new(Pubkey::try_from(transmute_one_to_bytes(&identity(
             market_state.coin_vault,
-        )))),
-        pc_vault: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
+        ))).unwrap()),
+        pc_vault: Box::new(Pubkey::try_from(transmute_one_to_bytes(&identity(
             market_state.pc_vault,
-        )))),
+        ))).unwrap()),
         vault_signer_key: Box::new(vault_signer_key),
     })
 }
@@ -540,7 +541,7 @@ fn consume_events_loop(
         let loop_start = std::time::Instant::now();
         let start_time = std::time::Instant::now();
         let event_q_value_and_context =
-            client.get_account_with_commitment(&market_keys.event_q, CommitmentConfig::recent())?;
+            client.get_account_with_commitment(&market_keys.event_q, CommitmentConfig::processed())?;
         let event_q_slot = event_q_value_and_context.context.slot;
         let max_slot_height = max_slot_height_mutex.lock().unwrap();
         if event_q_slot <= *max_slot_height {
@@ -556,7 +557,7 @@ fn consume_events_loop(
             .ok_or(format_err!("Failed to retrieve account"))?
             .data;
         let req_q_data = client
-            .get_account_with_commitment(&market_keys.req_q, CommitmentConfig::recent())?
+            .get_account_with_commitment(&market_keys.req_q, CommitmentConfig::processed())?
             .value
             .ok_or(format_err!("Failed to retrieve account"))?
             .data;
@@ -617,7 +618,7 @@ fn consume_events_loop(
 
             let mut account_metas = Vec::with_capacity(orders_accounts.len() + 4);
             for pubkey_words in orders_accounts {
-                let pubkey = Pubkey::new(transmute_to_bytes(&pubkey_words));
+                let pubkey = Pubkey::try_from(transmute_to_bytes(&pubkey_words)).unwrap();
                 account_metas.push(AccountMeta::new(pubkey, false));
             }
             for pubkey in [
@@ -713,7 +714,7 @@ fn consume_events_once(
     account_metas: Vec<AccountMeta>,
     to_consume: usize,
     _thread_number: usize,
-    event_q: Pubkey,
+    _event_q: Pubkey,
 ) -> Result<Signature> {
     let _start = std::time::Instant::now();
     let instruction_data: Vec<u8> = MarketInstruction::ConsumeEvents(to_consume as u16).pack();
@@ -727,12 +728,12 @@ fn consume_events_once(
         &payer.pubkey(),
         rand::random::<u64>() % 10000 + 1,
     );
-    let (recent_hash, _fee_calc) = client.get_recent_blockhash()?;
+    let latest_hash = client.get_latest_blockhash()?;
     let txn = Transaction::new_signed_with_payer(
         &[instruction, random_instruction],
         Some(&payer.pubkey()),
         &[payer],
-        recent_hash,
+        latest_hash,
     );
 
     info!("Consuming events ...");
@@ -762,13 +763,13 @@ fn consume_events(
             Some(i) => i,
         }
     };
-    let (recent_hash, _fee_calc) = client.get_recent_blockhash()?;
+    let latest_hash = client.get_latest_blockhash()?;
     info!("Consuming events ...");
     let txn = Transaction::new_signed_with_payer(
         std::slice::from_ref(&instruction),
         Some(&payer.pubkey()),
         &[payer],
-        recent_hash,
+        latest_hash,
     );
     info!("Consuming events ...");
     send_txn(client, &txn, false)?;
@@ -802,7 +803,7 @@ pub fn consume_events_instruction(
 
     let mut account_metas = Vec::with_capacity(orders_accounts.len() + 4);
     for pubkey_words in orders_accounts {
-        let pubkey = Pubkey::new(transmute_to_bytes(&pubkey_words));
+        let pubkey = Pubkey::try_from(transmute_to_bytes(&pubkey_words)).unwrap();
         account_metas.push(AccountMeta::new(pubkey, false));
     }
     for pubkey in [&state.market, &state.event_q, coin_wallet, pc_wallet].iter() {
@@ -969,8 +970,8 @@ pub fn cancel_order_by_client_order_id(
         &state.event_q,
         client_order_id,
     )?];
-    let (recent_hash, _fee_calc) = client.get_recent_blockhash()?;
-    let txn = Transaction::new_signed_with_payer(ixs, Some(&owner.pubkey()), &[owner], recent_hash);
+    let latest_hash = client.get_latest_blockhash()?;
+    let txn = Transaction::new_signed_with_payer(ixs, Some(&owner.pubkey()), &[owner], latest_hash);
 
     debug_println!("Canceling order by client order id instruction ...");
     let result = simulate_transaction(client, &txn, true, CommitmentConfig::confirmed())?;
@@ -998,8 +999,8 @@ pub fn close_open_orders(
         &owner.pubkey(),
         &state.market,
     )?];
-    let (recent_hash, _fee_calc) = client.get_recent_blockhash()?;
-    let txn = Transaction::new_signed_with_payer(ixs, Some(&owner.pubkey()), &[owner], recent_hash);
+    let latest_hash = client.get_latest_blockhash()?;
+    let txn = Transaction::new_signed_with_payer(ixs, Some(&owner.pubkey()), &[owner], latest_hash);
 
     debug_println!("Simulating close open orders instruction ...");
     let result = simulate_transaction(client, &txn, true, CommitmentConfig::confirmed())?;
@@ -1047,12 +1048,12 @@ pub fn init_open_orders(
     )?);
     signers.push(owner);
 
-    let (recent_hash, _fee_calc) = client.get_recent_blockhash()?;
+    let latest_hash = client.get_latest_blockhash()?;
     let txn = Transaction::new_signed_with_payer(
         &instructions,
         Some(&owner.pubkey()),
         &signers,
-        recent_hash,
+        latest_hash,
     );
     send_txn(client, &txn, false)?;
     Ok(())
@@ -1110,12 +1111,12 @@ pub fn place_order(
     instructions.push(instruction);
     signers.push(payer);
 
-    let (recent_hash, _fee_calc) = client.get_recent_blockhash()?;
+    let latest_hash = client.get_latest_blockhash()?;
     let txn = Transaction::new_signed_with_payer(
         &instructions,
         Some(&payer.pubkey()),
         &signers,
-        recent_hash,
+        latest_hash,
     );
     send_txn(client, &txn, false)?;
     Ok(())
@@ -1147,7 +1148,7 @@ fn settle_funds(
             AccountMeta::new_readonly(spl_token::ID, false),
         ],
     };
-    let (recent_hash, _fee_calc) = client.get_recent_blockhash()?;
+    let latest_hash = client.get_latest_blockhash()?;
     let mut signers = vec![payer];
     if let Some(s) = signer {
         signers.push(s);
@@ -1156,14 +1157,14 @@ fn settle_funds(
         &[instruction],
         Some(&payer.pubkey()),
         &signers,
-        recent_hash,
+        latest_hash,
     );
     let mut i = 0;
     loop {
         i += 1;
         assert!(i < 10);
         debug_println!("Simulating SettleFunds instruction ...");
-        let result = simulate_transaction(client, &txn, true, CommitmentConfig::single())?;
+        let result = simulate_transaction(client, &txn, true, CommitmentConfig::confirmed())?;
         if let Some(e) = result.value.err {
             return Err(format_err!("simulate_transaction error: {:?}", e));
         }
@@ -1232,7 +1233,7 @@ pub fn list_market(
 
     instructions.push(init_market_instruction);
 
-    let (recent_hash, _fee_calc) = client.get_recent_blockhash()?;
+    let latest_hash = client.get_latest_blockhash()?;
     let signers = vec![
         payer,
         &market_key,
@@ -1247,11 +1248,11 @@ pub fn list_market(
         &instructions,
         Some(&payer.pubkey()),
         &signers,
-        recent_hash,
+        latest_hash,
     );
 
     debug_println!("txn:\n{:#x?}", txn);
-    let result = simulate_transaction(client, &txn, true, CommitmentConfig::single())?;
+    let result = simulate_transaction(client, &txn, true, CommitmentConfig::confirmed())?;
     if let Some(e) = result.value.err {
         return Err(format_err!("simulate_transaction error: {:?}", e));
     }
@@ -1364,16 +1365,16 @@ pub fn match_orders(
         data: instruction_data,
     };
 
-    let (recent_hash, _fee_calc) = client.get_recent_blockhash()?;
+    let latest_hash = client.get_latest_blockhash()?;
     let txn = Transaction::new_signed_with_payer(
         std::slice::from_ref(&instruction),
         Some(&payer.pubkey()),
         &[payer],
-        recent_hash,
+        latest_hash,
     );
 
     debug_println!("Simulating order matching ...");
-    let result = simulate_transaction(&client, &txn, true, CommitmentConfig::single())?;
+    let result = simulate_transaction(&client, &txn, true, CommitmentConfig::confirmed())?;
     if let Some(e) = result.value.err {
         return Err(format_err!("simulate_transaction error: {:?}", e));
     }
@@ -1413,13 +1414,13 @@ fn create_account(
 
     let instructions = vec![create_account_instr, init_account_instr];
 
-    let (recent_hash, _fee_calc) = client.get_recent_blockhash()?;
+    let latest_hash = client.get_latest_blockhash()?;
 
     let txn = Transaction::new_signed_with_payer(
         &instructions,
         Some(&payer.pubkey()),
         &signers,
-        recent_hash,
+        latest_hash,
     );
 
     debug_println!("Creating account: {} ...", spl_account.pubkey());
@@ -1447,12 +1448,12 @@ fn mint_to_existing_account(
     )?;
 
     let instructions = vec![mint_tokens_instr];
-    let (recent_hash, _fee_calc) = client.get_recent_blockhash()?;
+    let latest_hash = client.get_latest_blockhash()?;
     let txn = Transaction::new_signed_with_payer(
         &instructions,
         Some(&payer.pubkey()),
         &signers,
-        recent_hash,
+        latest_hash,
     );
     send_txn(client, &txn, false)?;
     Ok(())
@@ -1476,12 +1477,12 @@ fn initialize_token_account(client: &RpcClient, mint: &Pubkey, owner: &Keypair) 
     )?;
     let signers = vec![owner, &recip_keypair];
     let instructions = vec![create_recip_instr, init_recip_instr];
-    let (recent_hash, _fee_calc) = client.get_recent_blockhash()?;
+    let latest_hash = client.get_latest_blockhash()?;
     let txn = Transaction::new_signed_with_payer(
         &instructions,
         Some(&owner.pubkey()),
         &signers,
-        recent_hash,
+        latest_hash,
     );
     send_txn(client, &txn, false)?;
     Ok(recip_keypair)
@@ -1503,7 +1504,7 @@ async fn read_queue_length_loop(
         let client = client.clone();
         let market_keys = get_keys_for_market(&client, &program_id, &market).unwrap();
         let event_q_data = client
-            .get_account_with_commitment(&market_keys.event_q, CommitmentConfig::recent())
+            .get_account_with_commitment(&market_keys.event_q, CommitmentConfig::processed())
             .unwrap()
             .value
             .expect("Failed to retrieve account")
