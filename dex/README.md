@@ -47,3 +47,18 @@ make local
 ```
 
 Address of deployed dex should appear.
+
+## Devnet
+
+### New deployment
+
+To deploy run `make devnet`. It will deploy dex program with new address.
+
+### Update
+
+Command `make devnet-update` deploys program for given address. Address is set inside script. For official Deriverse devnet you need private key accessible on project Confluence.
+
+To update existing instance:
+1. copy admin private key to `./admin-key.json`
+1. run `make devnet-update`
+2. 
