@@ -1,4 +1,5 @@
 use std::convert::identity;
+use std::convert::TryFrom;
 use std::mem::size_of;
 use std::num::NonZeroU64;
 
@@ -24,7 +25,7 @@ use state::{Market, MarketState, OpenOrders, State, ToAlignedBytes};
 use super::*;
 
 fn random_pubkey<'bump, G: rand::Rng>(_rng: &mut G, bump: &'bump Bump) -> &'bump Pubkey {
-    bump.alloc(Pubkey::new(transmute_to_bytes(&rand::random::<[u64; 4]>())))
+    bump.alloc(Pubkey::try_from(transmute_to_bytes(&rand::random::<[u64; 4]>())))
 }
 
 struct MarketAccounts<'bump> {

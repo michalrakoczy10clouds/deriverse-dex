@@ -35,7 +35,7 @@ pub fn create_account_rent_exempt(
 
     let instructions = vec![create_account_instr];
 
-    let (recent_hash, _fee_calc) = client.get_recent_blockhash()?;
+    let (recent_hash, _fee_calc) = client.get_latest_blockhash()?;
 
     let txn = Transaction::new_signed_with_payer(
         &instructions,
